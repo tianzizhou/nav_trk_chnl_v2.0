@@ -269,11 +269,26 @@ class StereoCamera:
     )
 
     # Camera-to-body transformation
+    # Camera: X-right, Y-down, Z-forward
+    # Body:   X-forward, Y-right, Z-down
     c2b_cfg = cam_cfg.get('cam_to_body', {})
-    c2b_rot = c2b_cfg.get('rotation', [0, 0, 0])
-    self.R_cam2body = euler_to_rotation_matrix(
-      c2b_rot[2], c2b_rot[1], c2b_rot[0]
-    )
+
+    if c2b_cfg.get('use_standard_transform', False):
+      # Standard permutation: cam->body
+      # cam_X(right)   -> body_Y(right)
+      # cam_Y(down)    -> body_Z(down)
+      # cam_Z(forward) -> body_X(forward)
+      self.R_cam2body = np.array([
+        [0, 0, 1],
+        [1, 0, 0],
+        [0, 1, 0],
+      ], dtype=np.float64)
+    else:
+      c2b_rot = c2b_cfg.get('rotation', [0, 0, 0])
+      self.R_cam2body = euler_to_rotation_matrix(
+        c2b_rot[2], c2b_rot[1], c2b_rot[0]
+      )
+
     self.T_cam2body = np.array(
       c2b_cfg.get('translation', [0, 0, 0]),
       dtype=np.float64
