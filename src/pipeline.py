@@ -86,6 +86,8 @@ class DetectionPipeline:
     self.tracker = MultiTargetTracker(config=config)
     self.solver = PositionSolver(self.camera, config)
 
+    self._detector_overrides = None
+
     # Detection schedule
     self.full_detect_interval = config.get(
       'detection', {}
@@ -111,13 +113,12 @@ class DetectionPipeline:
     # Step 1: Detection (simulated from GT)
     t1 = time.perf_counter()
 
-    # Get detector overrides if scenario provides them
-    detector_overrides = None
     gt_list = frame_data.ground_truth
 
+    # Pass scenario-specific detector overrides
     detections = self.detector.detect_from_gt(
       gt_list,
-      detector_overrides=detector_overrides,
+      detector_overrides=self._detector_overrides,
     )
     timing['detection_ms'] = (
       (time.perf_counter() - t1) * 1000
@@ -217,6 +218,11 @@ class DetectionPipeline:
       'random_seed', 42
     )
     self.detector.set_seed(seed)
+
+    # Capture scenario-specific detector overrides
+    self._detector_overrides = None
+    if hasattr(scenario, 'get_detector_overrides'):
+      self._detector_overrides = scenario.get_detector_overrides()
 
     frame_results = []
     t_start = time.perf_counter()
