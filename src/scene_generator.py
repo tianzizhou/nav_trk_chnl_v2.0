@@ -63,17 +63,20 @@ class SceneGenerator:
   provides ground truth annotations.
   """
 
-  def __init__(self, stereo_camera, config=None):
+  def __init__(self, stereo_camera, config=None,
+               skip_image_render=False):
     """Initialize scene generator.
 
     Args:
-      stereo_camera: StereoCamera instance.
-      config:        Configuration dict (or None for defaults).
+      stereo_camera:    StereoCamera instance.
+      config:           Configuration dict (or None for defaults).
+      skip_image_render: If True, generate dummy images (faster).
     """
     self.cam = stereo_camera
     if config is None:
       config = load_config()
     self.config = config
+    self.skip_image_render = skip_image_render
 
     # Image synthesis parameters
     img_cfg = config.get('simulation', {}).get(
@@ -194,13 +197,19 @@ class SceneGenerator:
 
       gt_list.append(gt)
 
-    # Generate synthetic images
-    left_img = self._render_image(
-      gt_list, is_left=True
-    )
-    right_img = self._render_image(
-      gt_list, is_left=False
-    )
+    # Generate synthetic images (or dummy for speed)
+    if self.skip_image_render:
+      H = self.cam.left.height
+      W = self.cam.left.width
+      left_img = np.zeros((H, W, 3), dtype=np.uint8)
+      right_img = np.zeros((H, W, 3), dtype=np.uint8)
+    else:
+      left_img = self._render_image(
+        gt_list, is_left=True
+      )
+      right_img = self._render_image(
+        gt_list, is_left=False
+      )
 
     return FrameData(
       timestamp=ts,

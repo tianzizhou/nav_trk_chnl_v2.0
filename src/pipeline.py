@@ -66,12 +66,14 @@ class DetectionPipeline:
   Tracker → PositionSolver
   """
 
-  def __init__(self, config=None, config_path=None):
+  def __init__(self, config=None, config_path=None,
+               skip_image_render=False):
     """Initialize the pipeline.
 
     Args:
-      config:      Configuration dict.
-      config_path: Path to config file (used if config is None).
+      config:            Configuration dict.
+      config_path:       Path to config file (if config is None).
+      skip_image_render: Skip image rendering for speed.
     """
     if config is None:
       config_path = config_path or "config/default_config.yaml"
@@ -80,7 +82,10 @@ class DetectionPipeline:
 
     # Initialize all modules
     self.camera = StereoCamera(config=config)
-    self.scene_gen = SceneGenerator(self.camera, config)
+    self.scene_gen = SceneGenerator(
+      self.camera, config,
+      skip_image_render=skip_image_render,
+    )
     self.stereo = StereoProcessor(self.camera, config)
     self.detector = SimulatedDetector(config=config)
     self.tracker = MultiTargetTracker(config=config)
